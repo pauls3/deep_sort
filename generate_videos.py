@@ -42,7 +42,7 @@ if __name__ == "__main__":
     for sequence_txt in os.listdir(args.result_dir):
         sequence = os.path.splitext(sequence_txt)[0]
         sequence_dir = os.path.join(args.mot_dir, sequence)
-        if not os.path.exists(sequence_dir):
+        if not os.path.exists(sequence) or not os.path.exists(sequence_txt):
             print("Directory for videos doesn't exist!")
             print(sequence_dir)
             print(sequence)
