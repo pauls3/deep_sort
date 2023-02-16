@@ -42,12 +42,12 @@ if __name__ == "__main__":
     for sequence_txt in os.listdir(args.result_dir):
         sequence = os.path.splitext(sequence_txt)[0]
         sequence_dir = os.path.join(args.mot_dir, sequence)
-        if not os.path.exists(sequence):
-            print("Directory for videos doesn't exist!")
-            print(sequence_dir)
-            print(sequence)
-            print(sequence_txt)
-            continue
+        # if not os.path.exists(sequence_dir):
+        #     print("Directory for videos doesn't exist!")
+        #     print(sequence_dir)
+        #     print(sequence)
+        #     print(sequence_txt)
+        #     continue
         result_file = os.path.join(args.result_dir, sequence_txt)
         update_ms = args.update_ms
         video_filename = os.path.join(args.output_dir, "%s.avi" % sequence)
