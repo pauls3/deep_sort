@@ -46,6 +46,7 @@ if __name__ == "__main__":
             print("Directory for videos doesn't exist!")
             print(sequence_dir)
             print(sequence)
+            print(sequence_txt)
             continue
         result_file = os.path.join(args.result_dir, sequence_txt)
         update_ms = args.update_ms
