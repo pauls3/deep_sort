@@ -1,3 +1,6 @@
+# Use the following command:
+#   python track_ps.py --source /home/asyed/yolo_bm/Raw_videos --yolo_model yolov5/yolov5m.pt --save-txt --save-vid --fourcc=mp4v
+
 # limit the number of cpus used by high performance libraries
 import os
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -47,15 +50,16 @@ db = client.trajectory_database
 def detect(opt):
 
     writerFlag = 0
+    videoFilesList = []
 
 
     url = "mongodb://localhost:27017" 
     client = MongoClient(url)
     db = client.trajectory_database
     
-    out, source, yolo_model, deep_sort_model, show_vid, save_vid, save_txt, imgsz, evaluate, half, project, name, exist_ok= \
+    out, source, yolo_model, deep_sort_model, show_vid, save_vid, save_txt, imgsz, evaluate, half, project, name, exist_ok, fourcc= \
         opt.output, opt.source, opt.yolo_model, opt.deep_sort_model, opt.show_vid, opt.save_vid, \
-        opt.save_txt, opt.imgsz, opt.evaluate, opt.half, opt.project, opt.name, opt.exist_ok
+        opt.save_txt, opt.imgsz, opt.evaluate, opt.half, opt.project, opt.name, opt.exist_ok, opt.fourcc
     webcam = source == '0' or source.startswith(
         'rtsp') or source.startswith('http') or source.endswith('.txt')
 
@@ -137,6 +141,8 @@ def detect(opt):
     txt_file_name = source.split('/')[-1].split('.')[0]
     txt_path = str(Path(save_dir)) + '/' + txt_file_name + '.txt'
 
+    LOGGER.info(f'\nResults will be stored in {save_dir}\n')
+
     if pt and device.type != 'cpu':
         model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.model.parameters())))  # warmup
     dt, seen = [0.0, 0.0, 0.0, 0.0], 0
@@ -160,6 +166,15 @@ def detect(opt):
         pred = non_max_suppression(pred, opt.conf_thres, opt.iou_thres, opt.classes, opt.agnostic_nms, max_det=opt.max_det)
         dt[2] += time_sync() - t3
 
+
+        # Log what video file is being worked on right now
+        if not path in videoFilesList:
+            videoFilesList.append(path)
+            LOGGER.info(f'Working on {path}')
+            
+            # Reset video writer
+            writerFlag = 0
+
         # Process detections
         for i, det in enumerate(pred):  # detections per image
             seen += 1
@@ -170,7 +185,12 @@ def detect(opt):
                 p, im0, _ = path, im0s.copy(), getattr(dataset, 'frame', 0)
 
             p = Path(p)  # to Path
-            save_path = str(save_dir / p.name)  # im.jpg, vid.mp4, ...
+            # save_path = str(save_dir / p.name)  # im.jpg, vid.mp4, ...
+            save_path = os.path.join(save_dir, p.name)  # im.jpg, vid.mp4, ...
+            save_vid_path = os.path.join(save_dir, 'result_videos', p.name)
+            save_txt_path = os.path.join(save_dir, 'result_txt', os.path.splitext(p.name)[0] + '_result.txt')
+            save_vid_dir = os.path.join(save_dir, 'result_videos')
+            save_txt_dir = os.path.join(save_dir, 'result_txt')
             s += '%gx%g ' % img.shape[2:]  # print string
 
             annotator = Annotator(im0, line_width=2, pil=not ascii)
@@ -207,6 +227,11 @@ def detect(opt):
                         label = f'{id} {names[c]} {conf:.2f}'
                         annotator.box_label(bboxes, label, color=colors(c, True))
 
+                        # TODO: Append results to each video file name (video_file_name_results.txt)
+                        # Remove writing out to the screen for logging
+                        # Add what file its working on (for progress being made)
+
+
                         if save_txt:
                             # to MOT format
                             bbox_left = output[0]
@@ -216,15 +241,23 @@ def detect(opt):
                             # Write MOT compliant results to file
                             #print("TXT_path", txt_path)
                             #txt_path = "/home/asyed/my_docker/Yolov5_DeepSort_Pytorch/runs/track/trafiradar_raw_AI_server/DIR4/results.txt"
-                            txt_path = '/home/asyed/yolo_bm/results/results.txt'
-                            with open(txt_path, 'a') as f:
+                            # txt_path = '/home/asyed/yolo_bm/results/results.txt'
+
+                            if not os.path.exists(save_txt_dir):
+                                os.makedirs(save_txt_dir)
+
+                            # txt_path = '/home/asyed/yolo_bm/results/'
+                            
+                            
+
+                            with open(save_txt_path, 'a') as f:
                                 f.write(('%g ' * 10 + '\n') % (frame_idx + 1, id, bbox_left,  # MOT format
                                                                bbox_top, bbox_w, bbox_h, -1, -1, -1, -1))
                             
                             
-                            with open(txt_path, 'a') as f:
-                                f.write(('%g ' * 10 + '\n') % (frame_idx + 1, id, bbox_left,  # MOT format
-                                                               bbox_top, bbox_w, bbox_h, -1, -1, -1, -1))
+                            # with open(txt_path, 'a') as f:
+                            #     f.write(('%g ' * 10 + '\n') % (frame_idx + 1, id, bbox_left,  # MOT format
+                            #                                    bbox_top, bbox_w, bbox_h, -1, -1, -1, -1))
 
                 # LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
 
@@ -245,26 +278,29 @@ def detect(opt):
     
             if save_vid:
                 # print("trying to save video...")
-                if vid_path != save_path:  # new video
-                    print("new video")
-                    vid_path = save_path
+                if vid_path != save_vid_path:  # new video
+                    # print("new video")
+                    vid_path = save_vid_path
                     if isinstance(vid_writer, cv2.VideoWriter):
-                        print("release!")
+                        # print("release!")
                         vid_writer.release()  # release previous video writer
                     if vid_cap:  # video
-                        print("vid_cap")
+                        # print("vid_cap")
                         fps = vid_cap.get(cv2.CAP_PROP_FPS)
                         w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                         h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     else:  # stream
-                        print("streem")
+                        # print("streem")
                         fps, w, h = 30, im0.shape[1], im0.shape[0]
 
+                if not os.path.exists(save_vid_dir):
+                    os.makedirs(save_vid_dir)
 
                 if writerFlag == 0:
-                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                    # fourccExt = cv2.VideoWriter_fourcc(*'mp4v')
+                    fourccExt = cv2.VideoWriter_fourcc(*fourcc)
                     # fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
-                    vid_writer = cv2.VideoWriter(save_path, fourcc, fps, (w, h))
+                    vid_writer = cv2.VideoWriter(save_vid_path, fourccExt, fps, (w, h))
                     writerFlag = 1
                 vid_writer.write(im0)#http://10.41.29.20/#/
                 
@@ -273,11 +309,10 @@ def detect(opt):
                 #print(im0.shape)
                 # print(save_path)
                 
-                r, jpg = cv2.imencode('.jpg', im0)
+                # r, jpg = cv2.imencode('.jpg', im0)
                # print(jpg.tobytes())
                 
-                
-                
+                 
                 
                 #return detect(opt)
                 #imageio.imwrite("/home/asyed/my_docker/Yolov5_DeepSort_Pytorch/runs/track/exp11/img_"
@@ -296,7 +331,9 @@ def detect(opt):
                 #cv2.imwrite("/home/asyed/my_docker/Yolov5_DeepSort_Pytorch/runs/track/trafiradar_raw_AI_server/DIR4/dir_4_detection/frame_" +str(frame_idx)+ ".png", im0) 
                 # cv2.imwrite("/home/asyed/yolo_bm/results_images/frame_" +str(frame_idx)+ ".png", im0) 
 
-    print(save_path)
+    # print(save_path)
+
+    LOGGER.info(f'\nResults  stored in {save_dir}')
 
     # Print results
 #    t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
