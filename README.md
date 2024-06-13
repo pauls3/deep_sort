@@ -17,6 +17,11 @@ To run the code, use the following command:
 python track_ps.py --source <path to directory of videos> --yolo_model <path to yolov5 model>/yolov5m.pt --save-txt --save-vid --fourcc=mp4v
 ```
 
+For example:
+```
+python track_ps.py --source /home/stanik/Raw_videos --yolo_model pretrained_models/yolov5m.pt --save-txt --save-vid --fourcc=mp4v
+```
+
 ## Dependencies
 
 The code is compatible with Python 2.7 and 3. The following dependencies are
