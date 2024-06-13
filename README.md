@@ -7,6 +7,16 @@ We extend the original [SORT](https://github.com/abewley/sort) algorithm to
 integrate appearance information based on a deep appearance descriptor.
 See the [arXiv preprint](https://arxiv.org/abs/1703.07402) for more information.
 
+## RTIS Lab at UNLV
+To use this code for pedestrian tracking, first install the the repo and its dependencies. It does use Tensorflow (see description below).
+
+After installing everything, download the YOLOv5M model and place it somewhere for the repo to access (inside repo is fine like './pretrained_models/yolov5m.pt'). A bunch of pretrained models can be found here (https://github.com/ultralytics/yolov5?tab=readme-ov-file#pretrained-checkpoints).
+
+To run the code, use the following command:
+```
+python track_ps.py --source <path to directory of videos> --yolo_model <path to yolov5 model>/yolov5m.pt --save-txt --save-vid --fourcc=mp4v
+```
+
 ## Dependencies
 
 The code is compatible with Python 2.7 and 3. The following dependencies are
@@ -22,7 +32,7 @@ Additionally, feature generation requires TensorFlow (>= 1.0).
 
 First, clone the repository:
 ```
-git clone https://github.com/nwojke/deep_sort.git
+git clone https://github.com/pauls3/deep_sort
 ```
 Then, download pre-generated detections and the CNN checkpoint file from
 [here](https://drive.google.com/open?id=18fKzfqnqhqW3s9zwsCbnVJ5XF2JFeqMp).
