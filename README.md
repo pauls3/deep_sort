@@ -12,6 +12,8 @@ To use this code for pedestrian tracking, first install the the repo and its dep
 
 After installing everything, download the YOLOv5M model and place it somewhere for the repo to access (inside repo is fine like './pretrained_models/yolov5m.pt'). A bunch of pretrained models can be found here (https://github.com/ultralytics/yolov5?tab=readme-ov-file#pretrained-checkpoints).
 
+Finally, clone the YOLOv5 repo into the Deep SORT directory from here (https://github.com/ultralytics/yolov5). It's path should be like `deepsort/yolov5`.
+
 To run the code, use the following command:
 ```
 python track_ps.py --source <path to directory of videos> --yolo_model <path to yolov5 model>/yolov5m.pt --save-txt --save-vid --fourcc=mp4v
